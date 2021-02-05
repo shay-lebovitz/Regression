@@ -1,0 +1,134 @@
+---
+title: "HW2"
+author: "Shay Lebovitz"
+date: "1/22/2021"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+library(broom)
+```
+
+## 2.27
+
+### a
+
+```{r}
+muscle <- read_delim('data/CH01PR27.txt', delim = " ", col_names = F)
+muscle <- lapply(muscle, as.numeric)
+muscle <- as_tibble(muscle)
+muscle <- muscle %>% 
+  transmute(X = X2, Y = X1)
+
+muscle_fit <- lm(Y ~ X, data = muscle)
+summary(muscle_fit)
+```
+
+$H_0: B_1 < 0$ vs. $H_1: B_1 >= 0$\
+$B_1 = -1.1900z$, $s_{B_1} = 0.0902$\
+$(-1.1900 - 0)/0.0902 = -13.19$
+
+$t(.95,58) = 1.672 < |-13.19|$\
+Therefore, we reject the null hypothesis that there is not a negative relationship between muscle mass and age in favor of the alternative. The p-value of this test is $8.24 * 10^{-19}$, which can be written as 0^+^.
+
+### b
+
+Just because there is a statistically significant p-value for the test that $B_0 = 0$ does not mean that $B_0$ has any significant meaning. In this case, it is certainly not meaningful, because the data only has middle-aged - elderly woman, who show declines in muscle mass. However, we all know that babies have practically no muscle mass and develop muscle until their 20's - 30's. Thus, we know that linear relationship does not extend much past the data. In general, one cannot make meaninful predictions far outside the range of the data.
+
+### c
+
+A 95% confidence interval of the difference in expected muscle mass for women differing by one year is essentially a 95% for Beta1.\
+$-1.1900 +- 0.0902 * 2.0017 = (-1.3706, -1.0094)$\
+There is no need to know the specific ages because the regression is linear, meaning the slope at one X value is the same as the slope at any other X value.
+
+## 2.28
+
+### a
+
+```{r}
+alpha <- 0.05
+age60 <- data.frame(X = 60)
+predict(muscle_fit, age60, interval = 'confidence', level = 1-alpha,
+        se.fit = TRUE)
+```
+
+There is a 95% probability that the mean muscle mass of of women aged 60 is between 82.83 and 87.06.
+
+### b
+
+```{r}
+predict(muscle_fit, age60, interval = 'prediction', level = 1-alpha)
+```
+
+There is a 95% probability that a 60 year old woman's muscle mass is between 68.45 and 101.44. This is a fairly wide range and doesn't give us much information, so it is not precise.
+
+### c
+
+```{r}
+CI <- predict(muscle_fit, age60, interval = "confidence", 
+              level = 1 - alpha, se.fit = TRUE)
+Yh.hat <- CI$fit[1]
+SE.Yh.hat <- CI$se.fit
+W <- sqrt(2 * qf(1 - alpha, 2, 58))
+LowerBound <- Yh.hat - W * SE.Yh.hat
+UpperBound <- Yh.hat + W * SE.Yh.hat
+Band <-c(LowerBound, UpperBound)
+Band
+```
+
+The confidence interval is very slightly wider in this case than in part (a). This is as it should be, because the confidence band takes into consideration the entire regression line, whereas in (a) only a single point is considered. Thus, there is more room for variation than in part (a) and hence a wider confidence interval.
+
+## 2.29
+
+### a
+```{r}
+muscle <- muscle %>%
+  mutate(yi_hat = 156.35 - 1.19*X) %>% 
+  mutate(yi_minus_yi_hat = Y - yi_hat) %>% 
+  mutate(y_bar = mean(Y)) %>% 
+  mutate(yi_hat_minus_y_bar = yi_hat - y_bar)
+
+par(mfrow = c(1,2))
+
+plot(muscle$X, muscle$yi_minus_yi_hat)
+plot(muscle$X, muscle$yi_hat_minus_y_bar)
+```
+<br>
+<br>
+I think it is pretty hard to tell from these graphs whether SSE or SSR is the larger proportion of SST. They look to be fairly equal. This tells me that R^2^ will be moderate, likely in the range of 0.6-0.8.  
+
+### b
+```{r}
+anova(muscle_fit)
+```
+
+### c  
+
+$H_0: B_1 = 0$ vs. $H_a: B_1 \neq\ 0$  
+$F^* = MSR/MSE = 11627.5/66.8 = 174.06$  
+$F^* > F(0.95, 1, 58)$, $174.06 = 4.01$  
+Therefore we can reject the null hypothesis that $B_1 = 0$ in favor of the alternative. There is statistical evidence at the 95% level that $B_1$ is not 0.  
+
+
+### d  
+
+The variation that remains unexplained by age is the error sum of squares, or SSE. The proportion of total variation is $SSE/SST$ = 25%. This is relatively small, meaning that the regression accoutned for most of the variation. Given the variability of data in the real world, this number is as expected.
+
+### e  
+
+$R^2 = SSR/SST = 11627.5/(11627.5 + 3874.4) = 0.7501$  
+$r = -\sqrt(R^2) = -0.8661$
+
+
+
+
+
